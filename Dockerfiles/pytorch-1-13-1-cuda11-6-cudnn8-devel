@@ -1,0 +1,102 @@
+# -*- dockerfile -*-
+
+# Copyright (c) 2019-2023
+# Shell-ML Project
+# Pedro Ribeiro Mendes Júnior <pedrormjunior@gmail.com> et al.
+# Artificial Intelligence Lab. Recod.ai
+# Institute of Computing (IC)
+# University of Campinas (Unicamp)
+# Campinas, São Paulo, Brazil
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+
+FROM pytorch/pytorch:1.13.1-cuda11.6-cudnn8-devel
+
+ENV TERM=xterm-256color
+
+RUN ln -fs /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime
+
+# https://stackoverflow.com/a/58264927/968131
+ENV DEBIAN_FRONTEND=noninteractive
+
+# # https://forums.developer.nvidia.com/t/notice-cuda-linux-repository-key-rotation/212771
+# RUN distro=ubuntu1804 && arch=x86_64 \
+#     && apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/$distro/$arch/3bf863cc.pub
+
+# install packages
+RUN apt-get update -qq \
+    && apt-get install --no-install-recommends -y \
+    tzdata \
+    man-db \
+    wget \
+    less \
+    openssh-client \
+    git \
+    htop \
+    vim \
+    unrar \
+    # for setting up locale (https://stackoverflow.com/q/39760663/968131)
+    locales \
+    # for using opencv-python (https://stackoverflow.com/a/47114731/968131)
+    libsm6 libxext6 libxrender1 \
+    graphviz \
+    tmux \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --upgrade pip \
+    && pip install \
+    scikit-image \
+    scikit-learn \
+    matplotlib \
+    pandas \
+    opencv-python \
+    filelock \
+    flake8 \
+    tqdm \
+    colored-traceback \
+    coloredlogs
+
+# https://stackoverflow.com/a/28406007/968131
+# http://jaredmarkell.com/docker-and-locales/
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+
+# https://serverfault.com/a/683651
+# ARG and ENV usage: https://stackoverflow.com/a/41919137
+ARG TZ=America/Sao_Paulo
+ENV TZ=$TZ
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+ARG UID=10085
+ARG GID=1000
+ARG GNAME=recod
+ARG USERNAME=pmendes
+RUN if [ $GNAME != users ]; then groupadd --gid $GID $GNAME; fi && \
+    useradd --create-home --shell /bin/bash --uid $UID --gid $GID $USERNAME && \
+    echo "$USERNAME:$USERNAME" | chpasswd && \
+    adduser $USERNAME sudo && \
+    su -l $USERNAME
+
+USER $USERNAME

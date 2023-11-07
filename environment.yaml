@@ -1,0 +1,15 @@
+name: rock-classification
+channels:
+  - nvidia
+  - pytorch
+dependencies:
+  - cudatoolkit
+  - pytorch
+  - torchvision
+  - filelock
+  - scikit-learn
+  # Optional
+  - coloredlogs
+  - tqdm
+  # For coding inside the environment:
+  - flake8

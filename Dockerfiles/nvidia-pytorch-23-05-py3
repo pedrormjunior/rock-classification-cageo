@@ -1,0 +1,67 @@
+# -*- dockerfile -*-
+
+# Copyright (c) 2019-2023
+# Shell-ML Project
+# Pedro Ribeiro Mendes Júnior <pedrormjunior@gmail.com> et al.
+# Artificial Intelligence Lab. Recod.ai
+# Institute of Computing (IC)
+# University of Campinas (Unicamp)
+# Campinas, São Paulo, Brazil
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+
+# Note: To connect inside the generated container with Emacs
+# through Tramp, it is necessary to symlink /usr/bin/sh to
+# /usr/bin/bash, as indicated in
+# https://github.com/emacs-pe/docker-tramp.el/issues/27#issuecomment-572813727.
+
+FROM nvcr.io/nvidia/pytorch:23.05-py3
+
+RUN ln -fs /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime # for `tzdata` below
+RUN apt-get update -qq \
+    && apt-get install --no-install-recommends -y \
+    tmux \
+    # for timezone
+    tzdata \
+    # for setting up locale (https://stackoverflow.com/q/39760663/968131)
+    locales \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --upgrade pip \
+    && pip install \
+    colored-traceback \
+    coloredlogs
+
+# https://stackoverflow.com/a/28406007/968131
+# http://jaredmarkell.com/docker-and-locales/
+RUN locale-gen en_US.UTF-8
+
+ARG UID=to-suply-with-docker-build
+ARG GID=to-suply-with-docker-build
+ARG GNAME=to-suply-with-docker-build
+ARG USERNAME=to-suply-with-docker-build
+RUN echo $UID $GID; if [ $GNAME != users ]; then groupadd --gid $GID $GNAME; fi && \
+    useradd --create-home --shell /bin/bash --uid $UID --gid $GID $USERNAME && \
+    su -l $USERNAME
+
+USER $USERNAME
